@@ -20,6 +20,8 @@ function Register() {
 
     setIsLoading(true);
     setMessage('');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     try {
       const registrationData = {
@@ -38,7 +40,8 @@ function Register() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(registrationData)
+        body: JSON.stringify(registrationData),
+        signal: controller.signal
       });
 
       const contentType = response.headers.get('content-type');
@@ -67,12 +70,15 @@ function Register() {
     } catch (error) {
       console.error('Registration error:', error);
 
-      if (error.message === 'Failed to fetch') {
+      if (error.name === 'AbortError') {
+        setMessage('Registration timed out. The server may be unavailable; please try again.');
+      } else if (error.message === 'Failed to fetch') {
         setMessage(`Cannot connect to server. Please check if the backend server is running on ${API_BASE_URL}`);
       } else {
         setMessage('Network error. Please check your connection and try again.');
       }
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   }

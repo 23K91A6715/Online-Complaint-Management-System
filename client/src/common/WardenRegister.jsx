@@ -15,6 +15,8 @@ function WardenRegister() {
   const onSubmit = async (data) => {
     setIsLoading(true);
     setMessage('');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     try {
       const registrationData = { ...data };
@@ -28,7 +30,8 @@ function WardenRegister() {
         body: JSON.stringify({
           ...registrationData,
           role: 'warden'
-        })
+        }),
+        signal: controller.signal
       });
 
       const result = await response.json();
@@ -43,8 +46,13 @@ function WardenRegister() {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      setMessage('Network error. Please check your connection and try again.');
+      if (error.name === 'AbortError') {
+        setMessage('Registration timed out. The server may be unavailable; please try again.');
+      } else {
+        setMessage('Network error. Please check your connection and try again.');
+      }
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };
